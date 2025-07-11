@@ -1,6 +1,7 @@
 import pytest
 import allure
 import requests
+from config import BASE_URL, TEST_COOKIES, TEST_HEADERS  # Импорт из конфига
 
 
 @allure.feature("API Яндекс Еды")
@@ -9,18 +10,15 @@ class TestUserProfileAPI:
     @allure.title("Получение информации профиля")
     @allure.description("Проверка получения данных профиля авторизованного пользователя")
     def test_get_user_profile(self):
-        # 1. Подготовка тестовых данных
-        base_url = "https://eda.yandex.ru/api/v1"
-        endpoint = "/user/profile"
-        cookies =
-
-        headers =
+        endpoint = "/v1/user/profile"
+        url = f"{BASE_URL}{endpoint}"  # Используем импортированную BASE_URL
 
         with allure.step("1. Отправка GET-запроса для получения профиля"):
             response = requests.get(
-                f"{base_url}{endpoint}",
-                cookies=cookies,
-                headers=headers
+                url,
+                cookies=TEST_COOKIES,
+                headers=TEST_HEADERS,
+                timeout=10
             )
 
         with allure.step("2. Проверка статус кода"):

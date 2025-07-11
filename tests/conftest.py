@@ -1,60 +1,36 @@
 import pytest
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-from config.settings import Settings
-from config.test_data import TestData
+import requests
+from urllib.parse import urlencode
+import sys
+import os
 
+# Добавляем корневую директорию проекта в sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-@pytest.fixture(scope="session")
-def browser():
-    options = webdriver.ChromeOptions()
-    if Settings.HEADLESS:
-        options.add_argument("--headless")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
-    driver.maximize_window()
-    yield driver
-    driver.quit()
+from config import BASE_URL, TEST_COOKIES, TEST_HEADERS, COMMON_QUERY_PARAMS
 
 
 @pytest.fixture
-def auth_driver(browser):
-    browser.get(Settings.BASE_URL)
-
-    # Добавляем куки для авторизации
-    for name, value in TestData.COOKIES.items():
-        browser.add_cookie()
-
-    browser.refresh()
-    yield browser
-
-@pytest.fixture
-def base_url():
-    return os.getenv("BASE_URL", "https://eda.yandex.ru")
+def auth_session():
+    """Фикстура для авторизованной сессии"""
+    session = requests.Session()
+    session.cookies.update(TEST_COOKIES)
+    session.headers.update(TEST_HEADERS)
+    yield session
+    session.close()
 
 
-@pytest.fixture
-def default_timeout():
-    return int(os.getenv("DEFAULT_TIMEOUT", 10))
+@pytest.fixture(autouse=True)
+def cart_cleanup(auth_session):
+    """Автоматическая очистка корзины после каждого теста"""
+    yield
+    clear_params = COMMON_QUERY_PARAMS.copy()
+    clear_params["screen"] = "checkout"
 
-
-@pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
-    outcome = yield
-    rep = outcome.get_result()
-
-    if rep.when == "call" and rep.failed:
-        try:
-            if "browser" in item.fixturenames:
-                browser = item.funcargs["browser"]
-                allure.attach(
-                    browser.get_screenshot_as_png(),
-                    name="screenshot",
-                    attachment_type=allure.attachment_type.PNG
-                )
-        except Exception as e:
-            print(f"Failed to take screenshot: {e}")
+    try:
+        auth_session.delete(
+            f"{BASE_URL}/v2/cart?{urlencode(clear_params)}",
+            timeout=10
+        )
+    except Exception as e:
+        print(f"Ошибка при очистке корзины: {str(e)}")

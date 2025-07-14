@@ -32,6 +32,36 @@ Graduate work on QA Engineering course
 - `tests/` - тесты (UI и API)
 - `utils/` - вспомогательные функции
 
+## Настройка конфигурации
+
+Перед запуском тестов необходимо создать файл `config.py` в корне проекта со следующими данными:
+
+```python
+# config.py
+
+# Базовый URL API
+BASE_URL = "https://eda.yandex.ru/api"
+
+# Параметры авторизации
+TEST_COOKIES = {
+    "session_id": "ваш_идентификатор_сессии",
+    "user_id": "ваш_идентификатор_пользователя"
+}
+
+TEST_HEADERS = {
+    "User-Agent": "ваш_user_agent",
+    "Authorization": "Bearer ваш_токен_авторизации"
+}
+
+# Общие параметры запросов
+COMMON_QUERY_PARAMS = {
+    "longitude": 43.90708,
+    "latitude": 56.33089,
+    "screen": "menu",
+    "shippingType": "delivery",
+    "autoTranslate": "false"
+}
+
 ## Запуск тестов
 1. Установить зависимости: `pip install -r requirements.txt`
 2. Запуск всех тестов: `pytest`
